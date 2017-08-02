@@ -1,16 +1,31 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 #
-# Spawn a few threads to collect IPMI data from a cluster
+# Spawn a few processes to collect IPMI data from a cluster
 #
-# Programmed by <bastian.ballmann@inf.ethz.ch>
+# Copyright 2017 ETH Zurich, ISGINF, Bastian Ballmann
+# E-Mail: bastian.ballmann@inf.ethz.ch
+# Web: http://www.isg.inf.ethz.ch
 #
+# This is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# It is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License.
+# If not, see <http://www.gnu.org/licenses/>.
 
 ###[ Loading modules ]###
 
 import sys
-import commands
+import subprocess
 from random import randint
 from time import sleep, time
+from signal import signal, SIGINT
 from multiprocessing import Process, Queue
 
 
@@ -23,6 +38,18 @@ interessting_data = [                           # List of names we are interesst
     "CPU1",
     "CPU2"
 ]
+processes = []
+
+
+#
+# SIGNAL HANDLERS
+#
+
+def clean_shutdown(signal, frame):
+    for process in processes:
+        process.terminate()
+
+signal(SIGINT, clean_shutdown)
 
 
 ###[ Subroutines ]###
@@ -32,9 +59,9 @@ def get_sensor_data(work_queue, result_queue):
     Collect IPMI data, parse it and return it in Collectd input format
     """
     while 1:
-        while work_queue.qsize():
+        while not work_queue.empty():
             host = work_queue.get()
-            output = commands.getoutput(sensor_cmd + " -h " + host)
+            output = subprocess.getoutput(sensor_cmd + " -h " + host)
             result = ""
             results = []
 
@@ -79,6 +106,7 @@ if nr_of_threads > len(hosts):
 
 for i in range(nr_of_threads):
     worker = Process(target=get_sensor_data, args=(work_queue,result_queue))
+    processes.append(worker)
     worker.start()
 
 while 1:
@@ -98,7 +126,7 @@ while 1:
     for host, data in results.items():
         for result in data:
             if result:
-                print result
+                print(result)
 
     # Calc exeeded time and wait if we have some time to loose
     time_exceeded = time() - start_time
