@@ -10,7 +10,7 @@ remote-parallel-ipmi.py - Collect IPMI data in parallel using ipmi-sensors from 
 License
 =======
 
-Copyright 2015 ETH Zurich, ISGINF, Bastian Ballmann
+Copyright 2017 ETH Zurich, ISGINF, Bastian Ballmann
 E-Mail: bastian.ballmann@inf.ethz.ch
 Web: http://www.isg.inf.ethz.ch
 
